@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../constants/firebase_constants.dart';
 import '../../pages/auth/reset_password/reset_password_page.dart';
 import '../../pages/auth/signin/signin_page.dart';
 import '../../pages/auth/signup/signup_page.dart';
@@ -10,14 +12,49 @@ import '../../pages/content/home/home_page.dart';
 import '../../pages/page_not_found.dart';
 import '../../pages/splash/firebase_error_page.dart';
 import '../../pages/splash/splash_page.dart';
+import '../../repositories/auth_repository_provider.dart';
 import 'route_names.dart';
 
 part 'router_provider.g.dart';
 
 @riverpod
 GoRouter router(RouterRef ref) {
+  final authState = ref.watch(authStateStreamProvider);
+
   return GoRouter(
     initialLocation: '/splash',
+    redirect: (context, state) {
+      if (authState is AsyncLoading<User?>) {
+        return '/splash';
+      }
+
+      if (authState is AsyncError<User?>) {
+        return '/firebaseError';
+      }
+
+      final authenticated = authState.valueOrNull != null;
+
+      // 인증이 되지 않은 상태에서 인증과 관련된 작업을 하는 경로
+      // 이런 경로는 인증이된 상태라면 엑세스를 할 필요가 없는 경로
+      final authenticating = (state.matchedLocation == '/signin') ||
+          (state.matchedLocation == '/signup') ||
+          (state.matchedLocation == '/resetPassword');
+
+      // 인증이 되지 않은 상태에서
+      if (authenticated == false) {
+        // authenticating이 true가 아닌 경로로 접근하려고 하면 signin 경로로 redirecting
+        return authenticating ? null : '/signin';
+      }
+
+      // if (!fbAuth.currentUser!.emailVerified) {
+      //   return '/verifyEmail';
+      // }
+
+      final verifyingEmail = state.matchedLocation == '/verifyEmail';
+      final splashing = state.matchedLocation == '/splash';
+
+      return (authenticating || verifyingEmail || splashing) ? '/home' : null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
