@@ -43,8 +43,8 @@ GoRouter router(RouterRef ref) {
       // 인증이 되지 않은 상태에서
       if (authenticated == false) {
         // authenticating이 true가 아닌 경로로 접근하려고 하면 signin 경로로 redirecting
-        // return authenticating ? null : '/signin';
-        return authenticating ? null : '/signup';
+        return authenticating ? null : '/signin';
+        // return authenticating ? null : '/signup';
       }
 
       // if (!fbAuth.currentUser!.emailVerified) {
